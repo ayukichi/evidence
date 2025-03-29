@@ -20,7 +20,7 @@ jobs:
       - name: Install dependencies
         run: npm install
       - name: Replace CICD_BASE_PATH in evidence.config.yaml
-        run: sed -i 's/__CICD_BASE_PATH__/pr-${{ github.event.pull_request.number }}/g' evidence.config.yaml
+        run: sed -i 's/__CICD_BASE_PATH__/\/pr-${{ github.event.pull_request.number }}/g' evidence.config.yaml
       - name: build
         run: |
           npm run sources
