@@ -1,9 +1,10 @@
 name: Deploy to GitHub Pages
 
 on:
-  push:
+  pull_request:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   build:
@@ -11,27 +12,38 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-
       - name: Install dependencies
         run: npm install
-
       - name: build
         env:
           BASE_PATH: '/${{ github.event.repository.name }}'
         run: |
           npm run sources
           npm run build
-
       - name: Upload Artifacts
         uses: actions/upload-pages-artifact@v3
         with:
-          path: 'build/${{ github.event.repository.name }}'
+          path: 'build/${{ github.event.pull_request.number }}'
+
+  cleanup:
+    if: github.event.pull_request.merged == true || github.event.pull_request.closed == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Remove PR-specific directory
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          rm -rf build/$PR_NUMBER
+      - name: Upload Artifacts
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'build/${{ github.event.pull_request.number }}'
 
   deploy:
     needs: build
@@ -49,3 +61,6 @@ jobs:
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          branch: gh-pages
+          folder: build/${{ github.event.pull_request.number }}
