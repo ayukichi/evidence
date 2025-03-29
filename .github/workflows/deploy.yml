@@ -35,4 +35,5 @@ jobs:
           cp -r build/* pr-${{ github.event.pull_request.number }}/
           git add pr-${{ github.event.pull_request.number }}
           git commit -m "Deploy PR-${{ github.event.pull_request.number }} to GitHub Pages" || echo "No changes to commit"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
           git push origin gh-pages
