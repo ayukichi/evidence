@@ -21,7 +21,7 @@ jobs:
         run: npm install
       - name: build
         env:
-          BASE_PATH: '/${{ github.event.repository.name }}'
+          BASE_PATH: '/${{ github.event.repository.name }}/pr-${{ github.event.pull_request.number }}'
           EVIDENCE_BUILD_DIR: 'build/${{ github.event.pull_request.number }}'
         run: |
           npm run sources
@@ -29,6 +29,7 @@ jobs:
       - name: Upload Artifacts
         uses: actions/upload-pages-artifact@v3
         with:
+          name: github-pages-pr-${{ github.event.pull_request.number }}
           path: 'build/${{ github.event.pull_request.number }}'
 
   cleanup:
@@ -62,3 +63,5 @@ jobs:
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          artifact-name: github-pages-pr-${{ github.event.pull_request.number }}
