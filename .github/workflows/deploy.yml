@@ -39,7 +39,7 @@ jobs:
           mkdir -p pr-${{ github.event.pull_request.number }}
           rm -rf pr-${{ github.event.pull_request.number }}/*
           echo "Copying build to pr-${{ github.event.pull_request.number }}"
-          cp -r tmp/build/* pr-${{ github.event.pull_request.number }}
+          cp -r build/* pr-${{ github.event.pull_request.number }}
           git status
           git add pr-${{ github.event.pull_request.number }}
           git status
