@@ -2,6 +2,9 @@ appearance:
   default: system
   switcher: true
 
+deployment:
+  basePath: ${{__CICD_BASE_PATH__}}
+
 theme:
   colorPalettes:
     default:
