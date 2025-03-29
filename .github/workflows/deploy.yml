@@ -35,10 +35,9 @@ jobs:
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "action@github.com"
-          mkdir -p pr-${{ github.event.pull_request.number }}
+          mkdir -p docs/pr-${{ github.event.pull_request.number }}
           rm -rf pr-${{ github.event.pull_request.number }}/*
-          echo "Copying build to pr-${{ github.event.pull_request.number }}"
-          cp -r build/* pr-${{ github.event.pull_request.number }}
+          cp -r build/* docs/pr-${{ github.event.pull_request.number }}
           git status
           git add pr-${{ github.event.pull_request.number }}
           git status
