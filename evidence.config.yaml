@@ -2,9 +2,6 @@ appearance:
   default: system
   switcher: true
 
-deployment:
-  basePath: /evidence
-
 theme:
   colorPalettes:
     default:
