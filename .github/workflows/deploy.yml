@@ -22,6 +22,7 @@ jobs:
       - name: build
         env:
           BASE_PATH: '/${{ github.event.repository.name }}'
+          EVIDENCE_BUILD_DIR: 'build/${{ github.event.pull_request.number }}'
         run: |
           npm run sources
           npm run build
