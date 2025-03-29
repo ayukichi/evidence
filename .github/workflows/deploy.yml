@@ -22,46 +22,19 @@ jobs:
       - name: build
         env:
           BASE_PATH: '/${{ github.event.repository.name }}/pr-${{ github.event.pull_request.number }}'
-          EVIDENCE_BUILD_DIR: 'build/${{ github.event.pull_request.number }}'
+          EVIDENCE_BUILD_DIR: 'build/pr-${{ github.event.pull_request.number }}'
         run: |
           npm run sources
           npm run build
-      - name: Upload Artifacts
-        uses: actions/upload-pages-artifact@v3
-        with:
-          name: github-pages-pr-${{ github.event.pull_request.number }}
-          path: 'build/${{ github.event.pull_request.number }}'
-
-  cleanup:
-    if: github.event.pull_request.merged == true || github.event.pull_request.closed == true
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Remove PR-specific directory
+      - name: Deploy to gh-pages with PR folders
         run: |
-          PR_NUMBER=${{ github.event.pull_request.number }}
-          rm -rf build/$PR_NUMBER
-      - name: Upload Artifacts
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: 'build/${{ github.event.pull_request.number }}'
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-
-    permissions:
-      pages: write
-      id-token: write
-
-    environment:
-      name: github-pages
-      url: https://${{ github.event.repository.name }}.github.io/pr-${{ github.event.pull_request.number }}
-
-    steps:
-      - name: Deploy
-        id: deployment
-        uses: actions/deploy-pages@v4
-        with:
-          artifact_name: github-pages-pr-${{ github.event.pull_request.number }}
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin gh-pages
+          git checkout gh-pages || git checkout --orphan gh-pages
+          mkdir -p pr-${{ github.event.pull_request.number }}
+          rm -rf pr-${{ github.event.pull_request.number }}/*
+          cp -r build/* pr-${{ github.event.pull_request.number }}/
+          git add pr-${{ github.event.pull_request.number }}
+          git commit -m "Deploy PR-${{ github.event.pull_request.number }} to GitHub Pages" || echo "No changes to commit"
+          git push origin gh-pages
