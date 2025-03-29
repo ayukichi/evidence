@@ -21,16 +21,20 @@ jobs:
         run: npm install
       - name: build
         env:
-          BASE_PATH: '/${{ github.event.repository.name }}/pr-${{ github.event.pull_request.number }}'
+          BASE_PATH: '/${{ github.event.repository.name }}'
           EVIDENCE_BUILD_DIR: 'build/pr-${{ github.event.pull_request.number }}'
         run: |
           npm run sources
           npm run build
+
+      - name: Checkout to gh-pages branch
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
       - name: Deploy to gh-pages with PR folders
         run: |
-          git fetch origin gh-pages
-          git checkout gh-pages || git checkout --orphan gh-pages
-          echo "Deploying to gh-pages"
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "action@github.com"
           mkdir -p pr-${{ github.event.pull_request.number }}
           rm -rf pr-${{ github.event.pull_request.number }}/*
           echo "Copying build to pr-${{ github.event.pull_request.number }}"
@@ -38,5 +42,5 @@ jobs:
           git status
           git add pr-${{ github.event.pull_request.number }}
           git status
-          git commit -m "Deploy PR-${{ github.event.pull_request.number }} to GitHub Pages" || echo "No changes to commit"
+          git commit -m "Deploy PR-${{ github.event.pull_request.number }} to GitHub Pages"
           git push origin gh-pages
