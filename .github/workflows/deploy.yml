@@ -64,4 +64,4 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
         with:
-          artifact-name: github-pages-pr-${{ github.event.pull_request.number }}
+          artifact_name: github-pages-pr-${{ github.event.pull_request.number }}
