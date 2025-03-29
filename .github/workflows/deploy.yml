@@ -22,10 +22,14 @@ jobs:
       - name: build
         env:
           BASE_PATH: '/${{ github.event.repository.name }}'
-          EVIDENCE_BUILD_DIR: 'build/pr-${{ github.event.pull_request.number }}'
+          EVIDENCE_BUILD_DIR: 'build'
         run: |
           npm run sources
           npm run build
+
+      - name: MV build directory
+        run: |
+          mv build/* tmp/build
 
       - name: Checkout to gh-pages branch
         uses: actions/checkout@v4
@@ -38,7 +42,7 @@ jobs:
           mkdir -p pr-${{ github.event.pull_request.number }}
           rm -rf pr-${{ github.event.pull_request.number }}/*
           echo "Copying build to pr-${{ github.event.pull_request.number }}"
-          cp -r build/* pr-${{ github.event.pull_request.number }}/
+          cp -r tmp/build/* pr-${{ github.event.pull_request.number }}
           git status
           git add pr-${{ github.event.pull_request.number }}
           git status
