@@ -31,7 +31,7 @@
     "@evidence-dev/sqlite": "^2.0.7",
     "@evidence-dev/trino": "^1.0.9",
     "aws-cdk": "^2.1006.0",
-    "typescript": "^5.8.2"
+    "typescript": "^5.4.2"
   },
   "overrides": {
     "jsonwebtoken": "9.0.0",
