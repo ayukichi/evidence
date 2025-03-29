@@ -21,7 +21,7 @@ jobs:
         run: npm install
       - name: build
         env:
-          BASE_PATH: '/${{ github.event.repository.name }}'
+          BASE_PATH: '/${{ github.event.repository.name }}/pr-${{ github.event.pull_request.number }}'
           EVIDENCE_BUILD_DIR: 'build'
         run: |
           npm run sources
