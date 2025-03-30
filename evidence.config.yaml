@@ -4,7 +4,7 @@ appearance:
 
 # ローカル開発時はbuild_dirと同期させる
 deployment:
-  basePath: /__CICD_BASE_PATH__
+  basePath: __CICD_BASE_PATH__
 
 theme:
   colorPalettes:
