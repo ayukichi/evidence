@@ -19,9 +19,11 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm install
-      - name: build
+      - name: Replace BasePath
+        run: |
+          sed -i 's/__CICD_BASE_PATH__/\/pr-${{ github.event.pull_request.number }}/g' evidence.config.yaml
+          cat evidence.config.yaml
         env:
-          BASE_PATH: '/pr-${{ github.event.pull_request.number }}'
           EVIDENCE_BUILD_DIR: './build/${{ github.event.repository.name }}'
         run: |
           npm run sources
