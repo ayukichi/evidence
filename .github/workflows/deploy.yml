@@ -19,27 +19,26 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm install
-      - name: Replace CICD_BASE_PATH in evidence.config.yaml
-        run: sed -i 's/__CICD_BASE_PATH__/\/pr-${{ github.event.pull_request.number }}/g' evidence.config.yaml
       - name: build
+        env:
+          BASE_PATH: '/pr-${{ github.event.pull_request.number }}'
+          EVIDENCE_BUILD_DIR: './build/${{ github.event.repository.name }}'
         run: |
           npm run sources
           npm run build
 
-      - name: Checkout to gh-pages branch
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout
         uses: actions/checkout@v4
+      - name: Install AWS CLI
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          ref: gh-pages
-          clean: false
-      - name: Deploy to gh-pages with PR folders
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-1
+      - name: Copy to S3
         run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "action@github.com"
-          mkdir -p docs/pr-${{ github.event.pull_request.number }}
-          rm -rf pr-${{ github.event.pull_request.number }}/*
-          cp -r build/* docs/pr-${{ github.event.pull_request.number }}
-          git status
-          git add pr-${{ github.event.pull_request.number }}
-          git status
-          git commit -m "Deploy PR-${{ github.event.pull_request.number }} to GitHub Pages"
-          git push origin gh-pages
+          aws s3 cp --recursive ./build/${{ github.event.repository.name }} s3://evidence-delivery-bucket/pr-${{ github.event.pull_request.number }}
