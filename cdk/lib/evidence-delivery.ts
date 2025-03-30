@@ -6,25 +6,44 @@ import { Construct } from 'constructs';
 export class EvidenceDelivery extends cdk.Stack {
     constructor(scope: Construct, id: string, props: cdk.StackProps) {
         super(scope, id, props);
-
-        const bucket = new s3.Bucket(this, 'EvidenceDeliveryBucker', {
+        const bucket = new s3.Bucket(this, 'EvidenceDeliveryBucket', {
             bucketName: 'evidence-delivery-bucket',
             removalPolicy: cdk.RemovalPolicy.DESTROY,
             autoDeleteObjects: true,
-        })
+        });
 
-        const distiribution = new cloudfront.Distribution(this, 'EvidenceDeliveryDistribution', {
-            defaultBehavior: {
-                origin: new cloudfront.origins.S3Origin(bucket),
-                viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        const oac = new cloudfront.CfnOriginAccessControl(this, 'OAC', {
+            originAccessControlConfig: {
+                name: 'EvidenceDeliveryOAC',
+                originAccessControlOriginType: 's3',
+                signingBehavior: 'always',
+                signingProtocol: 'sigv4',
             },
-            defaultRootObject: 'index.html',
         });
 
-        new cdk.CfnOutput(this, 'BucketName', {
-            value: bucket.bucketName,
-            description: 'The name of the S3 bucket',
-            exportName: 'BucketName',
+        const distribution = new cloudfront.CloudFrontWebDistribution(this, 'EvidenceDeliveryDistribution', {
+            originConfigs: [
+                {
+                    s3OriginSource: {
+                        s3BucketSource: bucket,
+                    },
+                    behaviors: [{ isDefaultBehavior: true }],
+                },
+            ],
         });
+
+        const cfnDistribution = distribution.node.defaultChild as cloudfront.CfnDistribution;
+        cfnDistribution.addPropertyOverride('DistributionConfig.Origins.0.OriginAccessControlId', oac.ref);
+
+        bucket.addToResourcePolicy(new cdk.aws_iam.PolicyStatement({
+            actions: ['s3:GetObject'],
+            resources: [bucket.arnForObjects('*')],
+            principals: [new cdk.aws_iam.ServicePrincipal('cloudfront.amazonaws.com')],
+            conditions: {
+                StringEquals: {
+                    'AWS:SourceArn': `arn:aws:cloudfront::${cdk.Aws.ACCOUNT_ID}:distribution/${distribution.distributionId}`,
+                },
+            },
+        }));
     }
 }
