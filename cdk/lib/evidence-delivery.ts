@@ -10,6 +10,7 @@ export class EvidenceDelivery extends cdk.Stack {
             bucketName: 'evidence-delivery-bucket',
             removalPolicy: cdk.RemovalPolicy.DESTROY,
             autoDeleteObjects: true,
+            blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
         });
 
         const oac = new cloudfront.CfnOriginAccessControl(this, 'OAC', {
@@ -21,29 +22,84 @@ export class EvidenceDelivery extends cdk.Stack {
             },
         });
 
-        const distribution = new cloudfront.CloudFrontWebDistribution(this, 'EvidenceDeliveryDistribution', {
-            originConfigs: [
-                {
-                    s3OriginSource: {
-                        s3BucketSource: bucket,
+        const dirIndexFunction = new cloudfront.CfnFunction(
+            this,
+            'DirIndexFunction',
+            {
+                name: 'DirIndexFunction',
+                autoPublish: true,
+                functionConfig: {
+                    comment: 'Function to add index.html to directory requests',
+                    runtime: 'cloudfront-js-1.0',
+                },
+                functionCode: `
+                    function handler(event) {
+                        var request = event.request;
+                        var uri = request.uri;
+
+                        // URLの末尾がスラッシュで終わる場合
+                        if (uri.endsWith('/')) {
+                            request.uri += 'index.html';
+                        }
+                        // ファイル拡張子がない場合
+                        else if (!uri.includes('.')) {
+                            request.uri += '/index.html';
+                        }
+
+                    return request;
+                }`
+            }
+        )
+
+        const distribution = new cloudfront.CfnDistribution(
+            this,
+            'EvidenceDeliveryDistribution',
+            {
+                distributionConfig: {
+                    enabled: true,
+                    defaultRootObject: 'index.html',
+                    origins: [
+                        {
+                            id: 'S3Origin',
+                            domainName: bucket.bucketRegionalDomainName,
+                            s3OriginConfig: {},
+                            originAccessControlId: oac.ref,
+                        },
+                    ],
+                    defaultCacheBehavior: {
+                        targetOriginId: 'S3Origin',
+                        viewerProtocolPolicy: 'redirect-to-https',
+                        allowedMethods: ['GET', 'HEAD'],
+                        cachedMethods: ['GET', 'HEAD'],
+                        forwardedValues: {
+                            queryString: false,
+                            cookies: {
+                                forward: 'none',
+                            },
+                        },
+                        functionAssociations: [
+                            {
+                                eventType: 'viewer-request',
+                                functionArn: dirIndexFunction.ref
+                            }
+                        ]
+
+                    }
+                }
+            }
+        )
+
+        bucket.addToResourcePolicy(
+            new cdk.aws_iam.PolicyStatement({
+                actions: ['s3:GetObject'],
+                resources: [bucket.arnForObjects('*')],
+                principals: [new cdk.aws_iam.ServicePrincipal('cloudfront.amazonaws.com')],
+                conditions: {
+                    StringEquals: {
+                        'AWS:SourceArn': `arn:aws:cloudfront::${cdk.Aws.ACCOUNT_ID}:distribution/${distribution.ref}`,
                     },
-                    behaviors: [{ isDefaultBehavior: true }],
                 },
-            ],
-        });
-
-        const cfnDistribution = distribution.node.defaultChild as cloudfront.CfnDistribution;
-        cfnDistribution.addPropertyOverride('DistributionConfig.Origins.0.OriginAccessControlId', oac.ref);
-
-        bucket.addToResourcePolicy(new cdk.aws_iam.PolicyStatement({
-            actions: ['s3:GetObject'],
-            resources: [bucket.arnForObjects('*')],
-            principals: [new cdk.aws_iam.ServicePrincipal('cloudfront.amazonaws.com')],
-            conditions: {
-                StringEquals: {
-                    'AWS:SourceArn': `arn:aws:cloudfront::${cdk.Aws.ACCOUNT_ID}:distribution/${distribution.distributionId}`,
-                },
-            },
-        }));
+            })
+        );
     }
 }
